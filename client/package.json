@@ -3,12 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "start": "vite",  
+  "start-admin": "vite", 
+  "start-billing": "vite", 
+  "start-inventory": "vite", 
+  "build-admin": "vite build", 
+  "build-billing": "vite build", 
+  "build-inventory": "vite build"  
+},
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.2",

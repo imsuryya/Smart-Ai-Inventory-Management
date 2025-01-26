@@ -21,7 +21,7 @@ import { Calendar } from "../components/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "../components/components/ui/popover"
 import { Button } from "../components/components/ui/button"
 import { Input } from "../components/components/ui/input"
-import { CalendarIcon, Search, Lightbulb } from "lucide-react"
+import { Calendar as CalendarIcon, Lightbulb } from "lucide-react";
 import { format } from "date-fns"
 
 // Generate mock data for 1000+ products across different categories

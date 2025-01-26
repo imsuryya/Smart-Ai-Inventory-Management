@@ -6,7 +6,6 @@ import { Package2, LayoutDashboard, Users, ShoppingCart, LogOut } from "lucide-r
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/components/ui/avatar"
 import { Button } from "../components/components/ui/button"
-import { Separator } from "../components/components/ui/ui/separator"
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard")
