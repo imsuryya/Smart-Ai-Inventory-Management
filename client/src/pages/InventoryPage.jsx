@@ -1,5 +1,5 @@
 import { useState } from "react"
-import InventoryManagement from "../components/components/ui/InventoryManagement"
+import InventoryManagement from "../Inventory/InventoryManagement"
 import TaskMessages from "../Inventory/TaskMessages"
 import { Button } from "../components/components/ui/button"
 import { LayoutDashboard, MessageSquare, LogOut } from "lucide-react"
@@ -52,8 +52,8 @@ const Inventory = () => {
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium">Admin User</span>
-                    <span className="text-xs text-gray-500">admin@example.com</span>
+                    <span className="text-sm font-medium">Inventory User</span>
+                    <span className="text-xs text-gray-500">Inventory@example.com</span>
                   </div>
                 </div>
               </Button>

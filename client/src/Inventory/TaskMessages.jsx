@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/components/ui/table"
+import { Badge } from "../components/components/ui/badge"
+import { Button } from "../components/components/ui/button"
 
 // Mock data for tasks
 const mockTasks = [

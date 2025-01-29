@@ -3,8 +3,14 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    port: 5173,
-    open: '/'
+  build: {
+    rollupOptions: {
+      input: {
+        admin: 'index.html',
+        inventory: 'inventory.html',
+        billing: 'billing.html',
+        ecommerce: 'ecommerce.html'
+      }
+    }
   }
 })
