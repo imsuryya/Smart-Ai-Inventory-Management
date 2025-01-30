@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Html5QrcodeScanner } from "html5-qrcode"
+import { Html5Qrcode } from "html5-qrcode"
 import { Input } from "../components/components/ui/input"
 import { Button } from "../components/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/components/ui/card"
@@ -17,81 +17,161 @@ import {
 } from "../components/components/ui/dialog"
 import { Label } from "../components/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "../components/components/ui/radio-group"
-
-// Mock data for products
-const mockProducts = [
-  { id: "1", name: "Laptop", category: "Electronics", quantity: 50, price: 999.99, location: "Inventory" },
-  { id: "2", name: "Desk Chair", category: "Furniture", quantity: 30, price: 199.99, location: "E-commerce" },
-  { id: "3", name: "Wireless Mouse", category: "Electronics", quantity: 100, price: 29.99, location: "Both" },
-  { id: "4", name: "Bookshelf", category: "Furniture", quantity: 20, price: 149.99, location: "Inventory" },
-  { id: "5", name: "Coffee Maker", category: "Appliances", quantity: 40, price: 79.99, location: "E-commerce" },
-]
+import axios from "axios"
+import { toast } from "react-hot-toast"
 
 const InventoryManagement = () => {
-  const [products, setProducts] = useState(mockProducts)
+  const [products, setProducts] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [scannedResult, setScannedResult] = useState("")
   const [isScanning, setIsScanning] = useState(false)
+  const [error, setError] = useState("")
+  const qrRef = useRef(null)
   const [showStoreDialog, setShowStoreDialog] = useState(false)
   const [storeLocation, setStoreLocation] = useState("Inventory")
+  const [isLoading, setIsLoading] = useState(false)
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category: "",
+    quantity: 1,
+    price: 0,
+    description: "",
+  })
   const scannerRef = useRef(null)
 
   useEffect(() => {
+    fetchProducts()
+    const scannerInstance = scannerRef.current;
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear()
+      if (scannerInstance) {
+        scannerInstance.clear();
       }
     }
   }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/products')
+      setProducts(response.data)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      toast.error('Failed to fetch products')
+    }
+  }
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value)
   }
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setNewProduct(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handleScan = async (decodedText) => {
+    try {
+      setIsLoading(true)
+      // Assuming the QR code contains a JSON string with product data
+      const qrData = JSON.parse(decodedText)
+      setNewProduct({
+        ...qrData,
+        quantity: 1 // Default quantity
+      })
+      setScannedResult(decodedText)
+      setShowStoreDialog(true)
+    } catch (error) {
+      console.error('Error processing QR code:', error)
+      toast.error('Invalid QR code format')
+    } finally {
+      setIsLoading(false)
+      setIsScanning(false)
+      if (scannerRef.current) {
+        scannerRef.current.clear()
+      }
+    }
+  }
+
+  const startScanning = async () => {
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      if (devices && devices.length) {
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        qrRef.current = html5QrCode;
+        
+        await html5QrCode.start(
+          devices[0].id,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          handleScan,
+          (errorMessage) => {
+            if (!errorMessage.includes("QR code parse error")) {
+              setError(`QR Error: ${errorMessage}`);
+            }
+          }
+        );
+        
+        setIsScanning(true);
+      } else {
+        setError("No camera found");
+      }
+    } catch (err) {
+      console.error("Error starting scanner:", err);
+      setError(`Failed to start scanner: ${err.message}`);
+      setIsScanning(false);
+    }
+  };
+
+  const stopScanning = async () => {
+    try {
+      if (qrRef.current) {
+        await qrRef.current.stop();
+        qrRef.current = null;
+      }
+    } catch (err) {
+      console.error("Error stopping scanner:", err);
+    }
+    setIsScanning(false);
+  };
+
+  const handleStoreProduct = async () => {
+    try {
+      setIsLoading(true)
+      const productData = {
+        ...newProduct,
+        location: storeLocation,
+        qrCode: scannedResult,
+      }
+
+      await axios.post('http://localhost:5000/api/products', productData)
+      await fetchProducts()
+      toast.success('Product added successfully')
+      setShowStoreDialog(false)
+      setScannedResult("")
+      setNewProduct({
+        name: "",
+        category: "",
+        quantity: 1,
+        price: 0,
+        description: "",
+      })
+    } catch (error) {
+      console.error('Error storing product:', error)
+      toast.error('Failed to store product')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()),
+      product.category.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
-  const handleScan = (decodedText) => {
-    setScannedResult(decodedText)
-    setIsScanning(false)
-    setShowStoreDialog(true)
-    if (scannerRef.current) {
-      scannerRef.current.clear()
-    }
-  }
-
-  const startScanning = () => {
-    setIsScanning(true)
-    scannerRef.current = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 }, /* verbose= */ false)
-    scannerRef.current.render(handleScan, (error) => {
-      console.error("QR code scanning failed:", error)
-    })
-  }
-
-  const stopScanning = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear()
-    }
-    setIsScanning(false)
-  }
-
-  const handleStoreProduct = () => {
-    const newProduct = {
-      id: (products.length + 1).toString(),
-      name: `Scanned Item ${products.length + 1}`,
-      category: "Scanned",
-      quantity: 1,
-      price: 0,
-      location: storeLocation,
-    }
-
-    setProducts([...products, newProduct])
-    setShowStoreDialog(false)
-    setScannedResult("")
-  }
 
   const groupedProducts = filteredProducts.reduce((acc, product) => {
     if (!acc[product.category]) {
@@ -111,17 +191,24 @@ const InventoryManagement = () => {
           <CardDescription>Scan a product QR code to view details</CardDescription>
         </CardHeader>
         <CardContent>
-          {isScanning ? (
-            <div>
-              <div id="qr-reader" style={{ width: "100%" }}></div>
-              <Button onClick={stopScanning} className="mt-4">
+          <div className="space-y-4">
+            <div id="qr-reader" className="w-full max-w-sm mx-auto"></div>
+            {error && <p className="text-red-500">{error}</p>}
+            {isScanning ? (
+              <Button onClick={stopScanning} variant="destructive">
                 Stop Scanning
               </Button>
-            </div>
-          ) : (
-            <Button onClick={startScanning}>Start Scanning</Button>
-          )}
-          {scannedResult && <p className="mt-4">Last scanned: {scannedResult}</p>}
+            ) : (
+              <Button onClick={startScanning} disabled={isLoading}>
+                {isLoading ? "Processing..." : "Start Scanning"}
+              </Button>
+            )}
+            {scannedResult && (
+              <p className="mt-4 p-2 bg-gray-100 rounded">
+                Last scanned: {scannedResult}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -151,6 +238,7 @@ const InventoryManagement = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Quantity</TableHead>
@@ -160,7 +248,14 @@ const InventoryManagement = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product._id}>
+                      <TableCell>
+                        <img
+                          src={product.image || "/placeholder.svg"}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      </TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.category}</TableCell>
                       <TableCell>{product.quantity}</TableCell>
@@ -171,11 +266,12 @@ const InventoryManagement = () => {
                 </TableBody>
               </Table>
             </TabsContent>
-            {Object.entries(groupedProducts).map(([category, products]) => (
+            {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
               <TabsContent key={category} value={category}>
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Image</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead>Price</TableHead>
@@ -183,8 +279,15 @@ const InventoryManagement = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((product) => (
-                      <TableRow key={product.id}>
+                    {categoryProducts.map((product) => (
+                      <TableRow key={product._id}>
+                        <TableCell>
+                          <img
+                            src={product.image || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        </TableCell>
                         <TableCell>{product.name}</TableCell>
                         <TableCell>{product.quantity}</TableCell>
                         <TableCell>${product.price.toFixed(2)}</TableCell>
@@ -203,24 +306,69 @@ const InventoryManagement = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Store Scanned Product</DialogTitle>
-            <DialogDescription>Choose where to store the scanned product:</DialogDescription>
+            <DialogDescription>Enter product details and choose storage location:</DialogDescription>
           </DialogHeader>
-          <RadioGroup value={storeLocation} onValueChange={setStoreLocation}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Inventory" id="inventory" />
-              <Label htmlFor="inventory">Inventory</Label>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Product Name</Label>
+              <Input
+                id="name"
+                name="name"
+                value={newProduct.name}
+                onChange={handleInputChange}
+              />
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="E-commerce" id="ecommerce" />
-              <Label htmlFor="ecommerce">E-commerce</Label>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Input
+                id="category"
+                name="category"
+                value={newProduct.category}
+                onChange={handleInputChange}
+              />
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Both" id="both" />
-              <Label htmlFor="both">Both</Label>
+            <div className="space-y-2">
+              <Label htmlFor="price">Price</Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                value={newProduct.price}
+                onChange={handleInputChange}
+              />
             </div>
-          </RadioGroup>
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                name="quantity"
+                type="number"
+                value={newProduct.quantity}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Storage Location</Label>
+              <RadioGroup value={storeLocation} onValueChange={setStoreLocation}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Inventory" id="inventory" />
+                  <Label htmlFor="inventory">Inventory</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="E-commerce" id="ecommerce" />
+                  <Label htmlFor="ecommerce">E-commerce</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Both" id="both" />
+                  <Label htmlFor="both">Both</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
           <DialogFooter>
-            <Button onClick={handleStoreProduct}>Store Product</Button>
+            <Button onClick={handleStoreProduct} disabled={isLoading}>
+              {isLoading ? "Storing..." : "Store Product"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -229,4 +377,3 @@ const InventoryManagement = () => {
 }
 
 export default InventoryManagement
-

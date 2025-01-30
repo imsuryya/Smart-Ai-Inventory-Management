@@ -1,44 +1,40 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "../components/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/components/ui/card"
 import { Button } from "../components/components/ui/button"
-
-// Mock product data
-const products = [
-  {
-    id: 1,
-    name: "Smartphone",
-    price: 599,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Latest model with advanced features",
-  },
-  {
-    id: 2,
-    name: "Laptop",
-    price: 999,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Powerful and lightweight laptop",
-  },
-  {
-    id: 3,
-    name: "Headphones",
-    price: 199,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Noise-cancelling wireless headphones",
-  },
-  {
-    id: 4,
-    name: "Smartwatch",
-    price: 299,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Fitness tracker and smartwatch",
-  },
-]
+import axios from "axios"
 
 const ProductList = ({ onProductClick }) => {
+  const [products, setProducts] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
 
-  const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/products')
+      // Filter only products that are available in E-commerce or Both locations
+      const ecommerceProducts = response.data.filter(
+        product => ['E-commerce', 'Both'].includes(product.location)
+      )
+      setProducts(ecommerceProducts)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const filteredProducts = products.filter((product) => 
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  if (isLoading) {
+    return <div>Loading products...</div>
+  }
 
   return (
     <div className="space-y-4">
@@ -51,10 +47,10 @@ const ProductList = ({ onProductClick }) => {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className="cursor-pointer" onClick={() => onProductClick(product)}>
+          <Card key={product._id} className="cursor-pointer" onClick={() => onProductClick(product)}>
             <CardHeader>
               <CardTitle>{product.name}</CardTitle>
-              <CardDescription>${product.price}</CardDescription>
+              <CardDescription>${product.price.toFixed(2)}</CardDescription>
             </CardHeader>
             <CardContent>
               <img
@@ -75,4 +71,3 @@ const ProductList = ({ onProductClick }) => {
 }
 
 export default ProductList
-
