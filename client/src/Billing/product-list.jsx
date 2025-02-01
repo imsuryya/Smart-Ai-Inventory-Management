@@ -1,27 +1,43 @@
 "use client"
 
-import  { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "../components/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader } from "../components/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/components/ui/tabs"
+import axios from "axios"
+import { toast } from "react-hot-toast"
 
-// Mock data for products (you might want to move this to a separate file or fetch from an API)
-const mockProducts = [
-  { id: "1", name: "Laptop", category: "Electronics", price: 999.99 },
-  { id: "2", name: "Desk Chair", category: "Furniture", price: 199.99 },
-  { id: "3", name: "Wireless Mouse", category: "Electronics", price: 29.99 },
-  { id: "4", name: "Bookshelf", category: "Furniture", price: 149.99 },
-  { id: "5", name: "Coffee Maker", category: "Appliances", price: 79.99 },
-]
-
-const ProductList = () => {
+const InventoryManagement = () => {
+  const [products, setProducts] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [, setIsLoading] = useState(false)
 
-  const filteredProducts = mockProducts.filter(
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true)
+      const response = await axios.get('http://localhost:5000/api/products')
+      setProducts(response.data)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      toast.error('Failed to fetch products')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value)
+  }
+
+  const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()),
+      product.category.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const groupedProducts = filteredProducts.reduce((acc, product) => {
@@ -35,17 +51,17 @@ const ProductList = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Product List</h1>
+
       <Card>
         <CardHeader>
-          <CardTitle>Product List</CardTitle>
-          <CardDescription>Search and view available products</CardDescription>
+          <CardDescription>Search and view product inventory</CardDescription>
         </CardHeader>
         <CardContent>
           <Input
             type="text"
             placeholder="Search products..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
             className="mb-4"
           />
           <Tabs defaultValue="all" className="w-full">
@@ -61,36 +77,60 @@ const ProductList = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
+                    <TableHead>Quantity</TableHead>
                     <TableHead>Price</TableHead>
+                    <TableHead>Location</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product._id}>
+                      <TableCell>
+                        <img
+                          src={product.image || "/placeholder.svg"}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      </TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.category}</TableCell>
+                      <TableCell>{product.quantity}</TableCell>
                       <TableCell>${product.price.toFixed(2)}</TableCell>
+                      <TableCell>{product.location}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TabsContent>
-            {Object.entries(groupedProducts).map(([category, products]) => (
+            {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
               <TabsContent key={category} value={category}>
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Image</TableHead>
                       <TableHead>Name</TableHead>
+                      <TableHead>Quantity</TableHead>
                       <TableHead>Price</TableHead>
+                      <TableHead>Location</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((product) => (
-                      <TableRow key={product.id}>
+                    {categoryProducts.map((product) => (
+                      <TableRow key={product._id}>
+                        <TableCell>
+                          <img
+                            src={product.image || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        </TableCell>
                         <TableCell>{product.name}</TableCell>
+                        <TableCell>{product.quantity}</TableCell>
                         <TableCell>${product.price.toFixed(2)}</TableCell>
+                        <TableCell>{product.location}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -104,5 +144,4 @@ const ProductList = () => {
   )
 }
 
-export default ProductList
-
+export default InventoryManagement
