@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/components/ui/table"
 import { Button } from "../components/components/ui/button"
@@ -7,24 +7,42 @@ import { Label } from "../components/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/components/ui/select"
 import { Badge } from "../components/components/ui/badge"
 import { format } from "date-fns"
+import axios from "axios"
 
-// Mock data for existing users
-const initialUsers = [
-  { id: 1, username: "john_inventory", role: "Inventory", status: "Online", lastActive: "2023-06-15 10:30 AM" },
-  { id: 2, username: "jane_billing", role: "Billing", status: "Offline", lastActive: "2023-06-14 05:45 PM" },
-  { id: 3, username: "alice_inventory", role: "Inventory", status: "Online", lastActive: "2023-06-15 11:15 AM" },
-]
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const AssignRoles = () => {
-  const [users, setUsers] = useState(initialUsers)
-  const [newUser, setNewUser] = useState({ username: "", password: "", role: "" })
+  const [users, setUsers] = useState([])
   const [tasks, setTasks] = useState([])
+  const [newUser, setNewUser] = useState({ username: "", password: "", role: "" })
   const [newTask, setNewTask] = useState({
     username: "",
     description: "",
     status: "Not Done",
-    assignedDate: new Date(),
   })
+
+  useEffect(() => {
+    fetchUsers()
+    fetchTasks()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users`)
+      setUsers(response.data)
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/tasks`)
+      setTasks(response.data)
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
+    }
+  }
 
   const handleInputChange = (e) => {
     setNewUser({ ...newUser, [e.target.name]: e.target.value })
@@ -34,42 +52,61 @@ const AssignRoles = () => {
     setNewUser({ ...newUser, role: value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (newUser.username && newUser.password && newUser.role) {
-      setUsers([...users, { ...newUser, id: users.length + 1, status: "Offline", lastActive: "N/A" }])
-      setNewUser({ username: "", password: "", role: "" })
+    try {
+      if (newUser.username && newUser.password && newUser.role) {
+        await axios.post(`${API_BASE_URL}/users`, newUser)
+        setNewUser({ username: "", password: "", role: "" })
+        fetchUsers()
+      }
+    } catch (error) {
+      console.error('Error creating user:', error)
     }
   }
 
-  const handleDelete = (id) => {
-    setUsers(users.filter((user) => user.id !== id))
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/users/${id}`)
+      fetchUsers()
+    } catch (error) {
+      console.error('Error deleting user:', error)
+    }
   }
 
   const handleTaskInputChange = (e) => {
     setNewTask({ ...newTask, [e.target.name]: e.target.value })
   }
 
-  const handleTaskStatusChange = (value) => {
-    setNewTask({ ...newTask, status: value })
-  }
-
-  const handleTaskSubmit = (e) => {
+  const handleTaskSubmit = async (e) => {
     e.preventDefault()
-    if (newTask.username && newTask.description) {
-      setTasks([...tasks, { ...newTask, id: tasks.length + 1, assignedDate: new Date() }])
-      setNewTask({ username: "", description: "", status: "Not Done", assignedDate: new Date() })
+    try {
+      if (newTask.username && newTask.description) {
+        await axios.post(`${API_BASE_URL}/tasks`, newTask)
+        setNewTask({ username: "", description: "", status: "Not Done" })
+        fetchTasks()
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
     }
   }
 
-  const handleTaskDelete = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id))
+  const handleTaskDelete = async (id) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/tasks/${id}`)
+      fetchTasks()
+    } catch (error) {
+      console.error('Error deleting task:', error)
+    }
   }
 
-  const handleTaskStatusToggle = (id) => {
-    setTasks(
-      tasks.map((task) => (task.id === id ? { ...task, status: task.status === "Done" ? "Not Done" : "Done" } : task)),
-    )
+  const handleTaskStatusToggle = async (id) => {
+    try {
+      await axios.patch(`${API_BASE_URL}/tasks/${id}/status`)
+      fetchTasks()
+    } catch (error) {
+      console.error('Error updating task status:', error)
+    }
   }
 
   return (
@@ -147,7 +184,7 @@ const AssignRoles = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="taskStatus">Status</Label>
-                <Select onValueChange={handleTaskStatusChange} value={newTask.status}>
+                <Select onValueChange={(value) => setNewTask({ ...newTask, status: value })} value={newTask.status}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a status" />
                   </SelectTrigger>
@@ -181,15 +218,15 @@ const AssignRoles = () => {
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user._id}>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.role}</TableCell>
                   <TableCell>
                     <Badge variant={user.status === "Online" ? "success" : "secondary"}>{user.status}</Badge>
                   </TableCell>
-                  <TableCell>{user.lastActive}</TableCell>
+                  <TableCell>{format(new Date(user.lastActive), "yyyy-MM-dd HH:mm")}</TableCell>
                   <TableCell>
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(user.id)}>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(user._id)}>
                       Delete
                     </Button>
                   </TableCell>
@@ -218,21 +255,21 @@ const AssignRoles = () => {
             </TableHeader>
             <TableBody>
               {tasks.map((task) => (
-                <TableRow key={task.id}>
+                <TableRow key={task._id}>
                   <TableCell>{task.username}</TableCell>
                   <TableCell>{task.description}</TableCell>
                   <TableCell>
                     <Badge
                       variant={task.status === "Done" ? "success" : "secondary"}
                       className="cursor-pointer"
-                      onClick={() => handleTaskStatusToggle(task.id)}
+                      onClick={() => handleTaskStatusToggle(task._id)}
                     >
                       {task.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{format(task.assignedDate, "yyyy-MM-dd HH:mm")}</TableCell>
+                  <TableCell>{format(new Date(task.assignedDate), "yyyy-MM-dd HH:mm")}</TableCell>
                   <TableCell>
-                    <Button variant="destructive" size="sm" onClick={() => handleTaskDelete(task.id)}>
+                    <Button variant="destructive" size="sm" onClick={() => handleTaskDelete(task._id)}>
                       Delete Task
                     </Button>
                   </TableCell>
@@ -247,4 +284,3 @@ const AssignRoles = () => {
 }
 
 export default AssignRoles
-
