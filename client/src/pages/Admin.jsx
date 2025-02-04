@@ -7,12 +7,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "../components/components/ui/avatar"
 import { Button } from "../components/components/ui/button"
 
-const Admin = () => {
+const Admin = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("dashboard")
 
   const handleLogout = () => {
-    // Add logout logic here
-    console.log("Logging out...")
+    onLogout() // Call the passed logout handler
   }
 
   return (
