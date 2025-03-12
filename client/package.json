@@ -4,21 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-  "dev:admin": "vite --config vite.admin.config.js",
-  "dev:inventory": "vite --config vite.inventory.config.js",
-  "dev:billing": "vite --config vite.billing.config.js",
-  "dev:ecommerce": "vite --config vite.ecommerce.config.js",
-  "dev:all": "concurrently \"npm run dev:admin\" \"npm run dev:inventory\" \"npm run dev:billing\" \"npm run dev:ecommerce\"",
-  
-  "build:admin": "vite build --config vite.admin.config.js",
-  "build:inventory": "vite build --config vite.inventory.config.js",
-  "build:billing": "vite build --config vite.billing.config.js",
-  "build:ecommerce": "vite build --config vite.ecommerce.config.js",
-  "build:all": "concurrently \"npm run build:admin\" \"npm run build:inventory\" \"npm run build:billing\" \"npm run build:ecommerce\"",
-  
-  "preview": "vite preview"
+    "dev:admin": "vite --config vite.admin.config.js",
+    "dev:inventory": "vite --config vite.inventory.config.js",
+    "dev:billing": "vite --config vite.billing.config.js",
+    "dev:ecommerce": "vite --config vite.ecommerce.config.js",
+    "dev:all": "concurrently \"npm run dev:admin\" \"npm run dev:inventory\" \"npm run dev:billing\" \"npm run dev:ecommerce\"",
+    "build:admin": "vite build --config vite.admin.config.js",
+    "build:inventory": "vite build --config vite.inventory.config.js",
+    "build:billing": "vite build --config vite.billing.config.js",
+    "build:ecommerce": "vite build --config vite.ecommerce.config.js",
+    "build:all": "concurrently \"npm run build:admin\" \"npm run build:inventory\" \"npm run build:billing\" \"npm run build:ecommerce\"",
+    "preview": "vite preview"
   },
-
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.2",
